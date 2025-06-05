@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video2Sprite - 视频转精灵图工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* 自定义样式 */
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .drag-active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            border-color: #6366f1;
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 via-white to-purple-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- 头部 -->
+        <header class="text-center mb-12">
+            <h1 class="text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
+                🎮 Video2Sprite
+            </h1>
+            <p class="text-gray-600 text-lg">强大的视频转精灵图工具，支持高级背景处理</p>
+        </header>
+
+        <!-- 文件上传区域 -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-gray-100">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                <span class="text-blue-500 mr-3">📤</span>
+                视频文件上传
+            </h2>
+            
+            <div id="uploadArea" class="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center transition-all duration-300 hover:border-indigo-400 hover:bg-indigo-50/50 cursor-pointer">
+                <div class="text-6xl mb-4">🎬</div>
+                <p class="text-xl text-gray-700 mb-2">拖拽视频文件到这里或点击选择</p>
+                <p class="text-gray-500">支持 MP4, WEBM, AVI 等格式</p>
+                <input type="file" id="videoInput" accept="video/*" class="hidden">
+            </div>
+            
+            <div id="fileInfo" class="hidden mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="font-semibold text-green-800" id="fileName"></p>
+                        <p class="text-green-600 text-sm" id="fileDetails"></p>
+                    </div>
+                    <button onclick="app.fileManager.removeFile()" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+                        移除
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 参数设置 -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-gray-100">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                <span class="text-purple-500 mr-3">⚙️</span>
+                参数设置
+            </h2>
+            
+            <!-- 基础设置 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">精灵图宽度(帧)</label>
+                    <input type="number" id="spriteWidth" value="8" min="1" max="20" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">精灵图高度(帧)</label>
+                    <input type="number" id="spriteHeight" value="8" min="1" max="20" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">单帧宽度(像素)</label>
+                    <input type="number" id="frameWidth" value="64" min="32" max="256" step="16" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">单帧高度(像素)</label>
+                    <input type="number" id="frameHeight" value="64" min="32" max="256" step="16" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+            </div>
+
+            <!-- 时间和质量设置 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">帧间隔(毫秒)</label>
+                    <input type="number" id="frameInterval" value="100" min="50" max="1000" step="50" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">输出质量 <span id="qualityValue" class="text-indigo-600 font-semibold">90%</span></label>
+                    <input type="range" id="quality" value="0.9" min="0.1" max="1" step="0.1" 
+                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider">
+                </div>
+            </div>
+
+            <!-- 背景抠图设置 -->
+            <div class="border-t border-gray-200 pt-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                        <span class="text-green-500 mr-2">🎨</span>
+                        背景抠图设置
+                    </h3>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="removeBg" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <span class="ml-3 text-sm font-medium text-gray-700">启用背景抠图</span>
+                    </label>
+                </div>
+                
+                <div id="bgSettings" class="hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- 算法选择 -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">抠图算法</label>
+                            <select id="bgMethod" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="edge">边缘检测法</option>
+                                <option value="color">颜色阈值法</option>
+                                <option value="smart" selected>智能组合法</option>
+                                <option value="greenscreen">绿幕/蓝幕</option>
+                            </select>
+                        </div>
+                        
+                        <!-- 动态参数区域 -->
+                        <div id="algorithmParams" class="space-y-4">
+                            <!-- 参数将通过JavaScript动态插入 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 预览按钮 -->
+                    <div class="mt-6 text-center">
+                        <button onclick="app.backgroundRemover.previewEffect()" 
+                                class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors inline-flex items-center">
+                            <span class="mr-2">👀</span>
+                            预览抠图效果
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 处理按钮 -->
+        <div class="text-center mb-8">
+            <button id="processBtn" onclick="app.processor.startProcessing()" disabled
+                    class="px-12 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xl font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                <span class="mr-3">🚀</span>
+                开始转换
+            </button>
+        </div>
+
+        <!-- 进度显示 -->
+        <div id="progressSection" class="hidden bg-white rounded-2xl shadow-xl p-8 mb-8 border border-gray-100">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                <span class="text-yellow-500 mr-3">⏳</span>
+                处理进度
+            </h2>
+            <div class="space-y-4">
+                <div id="progressText" class="text-gray-700">准备中...</div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div id="progressBar" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <div class="text-right">
+                    <span id="progressPercent" class="text-lg font-semibold text-indigo-600">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 结果显示 -->
+        <div id="resultSection" class="hidden bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                <span class="text-green-500 mr-3">✅</span>
+                处理结果
+            </h2>
+            
+            <div class="mb-6">
+                <canvas id="spriteCanvas" class="max-w-full border border-gray-300 rounded-lg shadow-lg mx-auto block"></canvas>
+            </div>
+            
+            <div class="flex flex-wrap justify-center gap-4 mb-6">
+                <button onclick="app.fileManager.downloadSprite()" 
+                        class="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors inline-flex items-center">
+                    <span class="mr-2">💾</span>
+                    下载精灵图
+                </button>
+                <button onclick="app.fileManager.downloadConfig()" 
+                        class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors inline-flex items-center">
+                    <span class="mr-2">📋</span>
+                    下载配置
+                </button>
+                <button onclick="app.reset()" 
+                        class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors inline-flex items-center">
+                    <span class="mr-2">🔄</span>
+                    重新开始
+                </button>
+            </div>
+            
+            <details class="bg-gray-50 rounded-lg p-4">
+                <summary class="cursor-pointer font-semibold text-gray-700 hover:text-gray-900">查看配置信息</summary>
+                <pre id="configInfo" class="mt-4 text-xs bg-white p-4 rounded border overflow-x-auto"></pre>
+            </details>
+        </div>
+    </div>
+
+    <!-- 加载模块化JavaScript -->
+    <script type="module" src="js/app.js"></script>
+</body>
+</html> 
