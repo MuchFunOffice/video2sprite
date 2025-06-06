@@ -1,4 +1,4 @@
-# Video2Sprite v2.0 🎮
+# Video2Sprite v1.0 🎮
 
 强大的视频转精灵图工具，采用模块化架构，支持高级背景处理算法。
 
@@ -61,30 +61,12 @@ video2sprite/
 - 支持自动检测或手动指定
 - 适用于专业视频制作
 
-## 🔧 技术栈
-
-- **前端框架**: 原生 JavaScript (ES6 Modules)
-- **UI框架**: Tailwind CSS
-- **构建工具**: 无需构建，直接运行
-- **浏览器支持**: 现代浏览器 (Chrome, Firefox, Safari, Edge)
-
 ## 📋 系统要求
 
 - 支持 ES6 Modules 的现代浏览器
 - Canvas API 支持
 - Video API 支持
 - File API 支持
-
-## 🛠️ 开发者工具
-
-项目提供了丰富的开发者工具：
-
-```javascript
-// 在浏览器控制台中使用
-window.app.devTools.info()        // 查看应用信息
-window.app.devTools.exportState() // 导出应用状态
-window.app.devTools.reset()       // 重置应用
-```
 
 ## 📝 配置文件格式
 
