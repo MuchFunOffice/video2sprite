@@ -3,10 +3,11 @@
  * 负责视频帧提取和整体处理流程控制
  */
 export class VideoProcessor {
-    constructor(progressManager, backgroundRemover, spriteGenerator) {
+    constructor(progressManager, backgroundRemover, spriteGenerator, frameSelector) {
         this.progressManager = progressManager;
         this.backgroundRemover = backgroundRemover;
         this.spriteGenerator = spriteGenerator;
+        this.frameSelector = frameSelector;
         this.video = null;
         this.isProcessing = false;
     }
@@ -19,7 +20,91 @@ export class VideoProcessor {
     }
 
     /**
-     * 开始处理流程
+     * 提取所有帧供用户选择
+     */
+    async extractAllFrames() {
+        if (!this.video || this.isProcessing) {
+            console.warn('No video loaded or already processing');
+            return;
+        }
+
+        try {
+            this.isProcessing = true;
+            this.progressManager.show();
+            
+            const settings = this.getSettings();
+            
+            // 计算要提取的帧数量
+            const maxFrames = Math.min(
+                Math.floor(this.video.duration * 1000 / settings.frameInterval), // 根据视频时长和间隔计算
+                200 // 最大限制200帧以免界面过于复杂
+            );
+            
+            console.log(`🎬 开始提取 ${maxFrames} 帧供用户选择...`);
+            
+            const frames = await this.extractFramesForSelection(settings, maxFrames);
+            
+            this.progressManager.hide();
+            
+            // 显示帧选择界面
+            this.frameSelector.show(frames);
+
+        } catch (error) {
+            console.error('Frame extraction error:', error);
+            this.progressManager.showError('帧提取失败: ' + error.message);
+        } finally {
+            this.isProcessing = false;
+        }
+    }
+
+    /**
+     * 提取帧供选择（与原方法分离）
+     */
+    async extractFramesForSelection(settings, maxFrames) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = settings.frameWidth;
+        canvas.height = settings.frameHeight;
+
+        const frames = [];
+        const timeStep = this.video.duration / maxFrames;
+        
+        this.progressManager.update(10, '开始提取视频帧...');
+
+        for (let i = 0; i < maxFrames; i++) {
+            const time = i * timeStep;
+            
+            // 检查是否超出视频时长
+            if (time >= this.video.duration) {
+                console.log(`Reached end of video at frame ${i}`);
+                break;
+            }
+
+            try {
+                const frameData = await this.extractSingleFrame(time, canvas, ctx, settings);
+                frames.push(frameData);
+                
+                const progress = 10 + (i / maxFrames) * 80;
+                this.progressManager.update(progress, `提取帧 ${i + 1}/${maxFrames}...`);
+            } catch (error) {
+                console.warn(`Failed to extract frame at time ${time}:`, error);
+                continue;
+            }
+        }
+
+        if (frames.length === 0) {
+            throw new Error('未能提取到任何视频帧');
+        }
+
+        this.progressManager.update(90, `成功提取 ${frames.length} 帧`);
+        console.log(`✅ 成功提取 ${frames.length} 帧供用户选择`);
+        
+        return frames;
+    }
+
+    /**
+     * 开始处理流程（保留原有方法用于向后兼容）
      */
     async startProcessing() {
         if (!this.video || this.isProcessing) {
@@ -47,7 +132,7 @@ export class VideoProcessor {
     }
 
     /**
-     * 提取视频帧
+     * 提取视频帧（原有方法，用于直接处理）
      */
     async extractFrames(settings) {
         const canvas = document.createElement('canvas');
@@ -56,7 +141,7 @@ export class VideoProcessor {
         canvas.width = settings.frameWidth;
         canvas.height = settings.frameHeight;
 
-        const totalFrames = settings.spriteWidth * settings.spriteHeight;
+        const totalFrames = 64; // 默认提取64帧用于快速预览模式
         const frames = [];
         
         this.progressManager.update(10, '开始提取视频帧...');
@@ -134,8 +219,6 @@ export class VideoProcessor {
      */
     getSettings() {
         return {
-            spriteWidth: parseInt(document.getElementById('spriteWidth').value),
-            spriteHeight: parseInt(document.getElementById('spriteHeight').value),
             frameWidth: parseInt(document.getElementById('frameWidth').value),
             frameHeight: parseInt(document.getElementById('frameHeight').value),
             frameInterval: parseInt(document.getElementById('frameInterval').value),

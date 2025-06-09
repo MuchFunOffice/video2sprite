@@ -32,6 +32,75 @@
             border-color: #6366f1;
             transform: scale(1.02);
         }
+        
+        /* 帧选择相关样式 */
+        .frame-thumbnail {
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .frame-thumbnail:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .frame-thumbnail.selected {
+            border-color: #10b981 !important;
+            background-color: rgba(16, 185, 129, 0.1);
+        }
+        
+        .frame-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0);
+            transition: background 0.2s ease;
+        }
+        
+        .frame-thumbnail:hover .frame-overlay {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        
+        .frame-number {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        
+        .frame-checkbox {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border: 2px solid #d1d5db;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .frame-checkbox.checked {
+            background: #10b981;
+            border-color: #10b981;
+        }
+        
+        .frame-grid {
+            display: grid;
+            gap: 16px;
+            padding: 8px;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-indigo-50 via-white to-purple-50 min-h-screen">
@@ -78,27 +147,29 @@
                 参数设置
             </h2>
             
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div class="flex items-start">
+                    <span class="text-blue-500 text-lg mr-3 mt-0.5">💡</span>
+                    <div>
+                        <h3 class="text-blue-800 font-semibold mb-2">新版工作流程</h3>
+                        <p class="text-blue-700 text-sm">现在您可以先提取视频中的所有帧，然后手动选择想要合并的帧。精灵图的行列数将根据您选择的帧数自动优化计算。</p>
+                    </div>
+                </div>
+            </div>
+            
             <!-- 基础设置 -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">精灵图宽度(帧)</label>
-                    <input type="number" id="spriteWidth" value="8" min="1" max="20" 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">精灵图高度(帧)</label>
-                    <input type="number" id="spriteHeight" value="8" min="1" max="20" 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">单帧宽度(像素)</label>
                     <input type="number" id="frameWidth" value="64" min="32" max="256" step="16" 
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <p class="text-xs text-gray-500 mt-1">设置每个帧的像素宽度</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">单帧高度(像素)</label>
                     <input type="number" id="frameHeight" value="64" min="32" max="256" step="16" 
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <p class="text-xs text-gray-500 mt-1">设置每个帧的像素高度</p>
                 </div>
             </div>
 
@@ -124,13 +195,13 @@
                         背景抠图设置
                     </h3>
                     <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="removeBg" class="sr-only peer">
+                        <input type="checkbox" id="removeBg" class="sr-only peer" checked>
                         <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                         <span class="ml-3 text-sm font-medium text-gray-700">启用背景抠图</span>
                     </label>
                 </div>
                 
-                <div id="bgSettings" class="hidden">
+                <div id="bgSettings">
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <!-- 算法选择 -->
                         <div>
@@ -163,11 +234,63 @@
 
         <!-- 处理按钮 -->
         <div class="text-center mb-8">
-            <button id="processBtn" onclick="app.processor.startProcessing()" disabled
+            <button id="processBtn" onclick="app.processor.extractAllFrames()" disabled
                     class="px-12 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xl font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
-                <span class="mr-3">🚀</span>
-                开始转换
+                <span class="mr-3">🎞️</span>
+                提取所有帧
             </button>
+        </div>
+
+        <!-- 帧选择区域 -->
+        <div id="frameSelectionSection" class="hidden bg-white rounded-2xl shadow-xl p-8 mb-8 border border-gray-100">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                <span class="text-orange-500 mr-3">🎞️</span>
+                选择要合并的帧
+            </h2>
+            
+            <!-- 控制栏 -->
+            <div class="flex flex-wrap justify-between items-center mb-6 p-4 bg-gray-50 rounded-lg">
+                <div class="flex flex-wrap items-center gap-4 mb-4 sm:mb-0">
+                    <button id="selectAllFrames" onclick="app.frameSelector.selectAll()" 
+                            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                        全选
+                    </button>
+                    <button id="deselectAllFrames" onclick="app.frameSelector.deselectAll()" 
+                            class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                        全不选
+                    </button>
+                    <button id="reverseSelection" onclick="app.frameSelector.reverseSelection()" 
+                            class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
+                        反选
+                    </button>
+                    <span id="selectedCount" class="text-gray-700 font-medium">已选择: 0 帧</span>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <label class="text-sm font-medium text-gray-700">每行显示:</label>
+                    <select id="framesPerRow" onchange="app.frameSelector.updateLayout()" 
+                            class="px-3 py-1 border border-gray-300 rounded text-sm">
+                        <option value="6">6</option>
+                        <option value="8" selected>8</option>
+                        <option value="10">10</option>
+                        <option value="12">12</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- 帧网格显示 -->
+            <div id="frameGrid" class="grid gap-4 mb-6" style="grid-template-columns: repeat(8, 1fr);">
+                <!-- 帧缩略图将通过JavaScript动态插入 -->
+            </div>
+            
+            <!-- 确认按钮 -->
+            <div class="text-center">
+                <button id="confirmFrameSelection" onclick="app.frameSelector.confirmSelection()" disabled
+                        class="px-8 py-3 bg-green-500 text-white text-lg font-semibold rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span class="mr-2">✅</span>
+                    确认选择并生成精灵图
+                </button>
+            </div>
         </div>
 
         <!-- 进度显示 -->

@@ -311,47 +311,68 @@ export class BackgroundRemover {
      * 显示预览窗口
      */
     showPreviewWindow(canvas) {
-        const previewWindow = window.open('', '_blank', 'width=400,height=350');
-        const htmlContent = `
-            <html>
-                <head>
-                    <title>抠图效果预览</title>
-                    <style>
-                        body { 
-                            margin: 0; 
-                            padding: 20px; 
-                            font-family: Arial, sans-serif;
-                            background: repeating-conic-gradient(#ccc 0% 25%, white 0% 50%) 50% / 20px 20px;
-                        }
-                        .container {
-                            background: white;
-                            padding: 20px;
-                            border-radius: 10px;
-                            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                        }
-                        h3 { margin-top: 0; color: #333; }
-                        canvas { border: 2px solid #333; border-radius: 5px; }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <h3>🎨 抠图效果预览</h3>
-                        <canvas></canvas>
-                        <p style="margin-bottom: 0; color: #666; font-size: 14px;">
-                            算法: ${document.getElementById('bgMethod').selectedOptions[0].text}
-                        </p>
-                    </div>
-                </body>
-            </html>
+        // 移除现有的预览模态窗口（如果存在）
+        const existingModal = document.getElementById('previewModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // 创建模态窗口
+        const modal = document.createElement('div');
+        modal.id = 'previewModal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        
+        const algorithmName = document.getElementById('bgMethod').selectedOptions[0].text;
+        
+        modal.innerHTML = `
+            <div class="bg-white rounded-lg p-6 max-w-md mx-4 relative">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                        <span class="mr-2">🎨</span>
+                        抠图效果预览
+                    </h3>
+                    <button onclick="this.closest('#previewModal').remove()" 
+                            class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
+                </div>
+                
+                <div class="mb-4 p-4 rounded-lg" style="background: repeating-conic-gradient(#f3f4f6 0% 25%, white 0% 50%) 50% / 20px 20px;">
+                    <canvas id="previewCanvas" class="border-2 border-gray-300 rounded-lg shadow-lg mx-auto block"></canvas>
+                </div>
+                
+                <div class="text-center">
+                    <p class="text-sm text-gray-600 mb-4">算法: ${algorithmName}</p>
+                    <button onclick="this.closest('#previewModal').remove()" 
+                            class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors">
+                        关闭预览
+                    </button>
+                </div>
+            </div>
         `;
         
-        previewWindow.document.write(htmlContent);
-        previewWindow.document.close();
+        // 添加到页面
+        document.body.appendChild(modal);
         
-        const previewCanvas = previewWindow.document.querySelector('canvas');
+        // 设置预览画布
+        const previewCanvas = document.getElementById('previewCanvas');
         previewCanvas.width = canvas.width;
         previewCanvas.height = canvas.height;
         previewCanvas.getContext('2d').drawImage(canvas, 0, 0);
+        
+        // 点击背景关闭模态窗口
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+        
+        // ESC键关闭模态窗口
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                modal.remove();
+                document.removeEventListener('keydown', handleEscape);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
     }
 
     /**

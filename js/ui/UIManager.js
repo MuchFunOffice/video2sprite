@@ -60,6 +60,7 @@ export class UIManager {
     initializeUI() {
         this.updateQualityDisplay();
         this.updateAlgorithmParams();
+        this.toggleBackgroundSettings(); // 确保背景设置区域正确显示
     }
 
     /**
@@ -321,12 +322,10 @@ export class UIManager {
     reset() {
         this.hideFileInfo();
         this.elements.videoInput.value = '';
-        this.elements.removeBg.checked = false;
+        this.elements.removeBg.checked = true; // 默认启用背景抠图
         this.toggleBackgroundSettings();
         
         // 重置所有设置为默认值
-        document.getElementById('spriteWidth').value = 8;
-        document.getElementById('spriteHeight').value = 8;
         document.getElementById('frameWidth').value = 64;
         document.getElementById('frameHeight').value = 64;
         document.getElementById('frameInterval').value = 100;

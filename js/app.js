@@ -7,6 +7,7 @@
 import { VideoProcessor } from './core/VideoProcessor.js';
 import { BackgroundRemover } from './core/BackgroundRemover.js';
 import { SpriteGenerator } from './core/SpriteGenerator.js';
+import { FrameSelector } from './core/FrameSelector.js';
 import { UIManager } from './ui/UIManager.js';
 import { ProgressManager } from './ui/ProgressManager.js';
 import { FileManager } from './utils/FileManager.js';
@@ -74,6 +75,10 @@ class Video2SpriteApp {
         this.modules.progressManager = new ProgressManager();
         this.modules.backgroundRemover = new BackgroundRemover();
         this.modules.spriteGenerator = new SpriteGenerator();
+        this.modules.frameSelector = new FrameSelector(
+            this.modules.progressManager,
+            this.modules.spriteGenerator
+        );
         this.modules.uiManager = new UIManager();
         
         // 需要依赖其他模块的模块
@@ -86,7 +91,8 @@ class Video2SpriteApp {
         this.modules.processor = new VideoProcessor(
             this.modules.progressManager,
             this.modules.backgroundRemover,
-            this.modules.spriteGenerator
+            this.modules.spriteGenerator,
+            this.modules.frameSelector
         );
 
         console.log('📦 所有模块初始化完成');
@@ -105,6 +111,7 @@ class Video2SpriteApp {
     get processor() { return this.modules.processor; }
     get backgroundRemover() { return this.modules.backgroundRemover; }
     get spriteGenerator() { return this.modules.spriteGenerator; }
+    get frameSelector() { return this.modules.frameSelector; }
     get uiManager() { return this.modules.uiManager; }
     get progressManager() { return this.modules.progressManager; }
     get fileManager() { return this.modules.fileManager; }
